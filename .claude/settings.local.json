@@ -3,7 +3,9 @@
     "allow": [
       "Bash(npm start)",
       "Bash(npm install)",
-      "Bash(timeout 30 cmd:*)"
+      "Bash(timeout 30 cmd:*)",
+      "Bash(cat:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

@@ -87,24 +87,54 @@ function Cart() {
         </div>
 
         {cart.length > 0 && (
-          <div className="cart-footer">
-            <div className="cart-total">
-              <span>Subtotal:</span>
-              <span className="cart-total-price">{formatted}</span>
+          <>
+            <div className="order-summary">
+              <h3>Order Summary</h3>
+              <div className="order-summary-details">
+                <div className="summary-item">
+                  <span className="summary-label">Rice Type:</span>
+                  <span className="summary-value">{cart[0]?.riceType || 'White Rice'}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">School:</span>
+                  <span className="summary-value">{cart[0]?.school}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Student:</span>
+                  <span className="summary-value">{cart[0]?.studentName}</span>
+                </div>
+                <div className="summary-item">
+                  <span className="summary-label">Room:</span>
+                  <span className="summary-value">{cart[0]?.roomNumber}</span>
+                </div>
+                {cart[0]?.notes && (
+                  <div className="summary-notes">
+                    <span className="summary-label">Notes:</span>
+                    <p className="summary-notes-text">{cart[0].notes}</p>
+                  </div>
+                )}
+              </div>
             </div>
-            <button 
-              className="checkout-btn"
-              onClick={() => alert('Checkout coming in Week 4!')}
-            >
-              Proceed to Checkout
-            </button>
-            <button 
-              className="clear-cart-btn"
-              onClick={clearCart}
-            >
-              Clear Cart
-            </button>
-          </div>
+
+            <div className="cart-footer">
+              <div className="cart-total">
+                <span>Subtotal:</span>
+                <span className="cart-total-price">{formatted}</span>
+              </div>
+              <button
+                className="checkout-btn"
+                onClick={() => alert('Checkout coming in Week 4!')}
+              >
+                Proceed to Checkout
+              </button>
+              <button
+                className="clear-cart-btn"
+                onClick={clearCart}
+              >
+                Clear Cart
+              </button>
+            </div>
+          </>
         )}
       </div>
     </>

@@ -6,6 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 function OrderModal({ item, onClose }) {
   const [quantity, setQuantity] = useState(1);
+  const [riceType, setRiceType] = useState('White Rice');
   const [school, setSchool] = useState('');
   const [studentName, setStudentName] = useState('');
   const [roomNumber, setRoomNumber] = useState('');
@@ -50,10 +51,11 @@ function OrderModal({ item, onClose }) {
 
   const handleAddToCart = () => {
     if (!validateForm()) return;
-    
+
     addToCart({
       menuItem: item,
       quantity,
+      riceType,
       school,
       studentName,
       roomNumber,
@@ -102,6 +104,19 @@ function OrderModal({ item, onClose }) {
                 +
               </button>
             </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="riceType">Rice Type</label>
+            <select
+              id="riceType"
+              value={riceType}
+              onChange={(e) => setRiceType(e.target.value)}
+            >
+              <option value="White Rice">White Rice</option>
+              <option value="Brown Rice">Brown Rice</option>
+              <option value="Sushi Rice">Sushi Rice</option>
+            </select>
           </div>
 
           <div className="form-group">

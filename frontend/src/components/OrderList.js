@@ -234,11 +234,21 @@ function OrderList() {
   const getProductionList = () => {
     const productionMap = {};
 
-    // Use all orders (not filtered) for production list
+    // Filter orders by both date and school for production list
+    const selectedDateStr = formatDateDDMMYYYY(selectedDate);
+
     const ordersToProcess = orders.filter(order => {
-      // Only filter by school, not by date
+      // Filter by date
+      const orderDate = order.deliveryDate || order.date;
+      if (!orderDate) return false;
+
+      const orderDateStr = formatDateDDMMYYYY(orderDate);
+      const dateMatches = orderDateStr === selectedDateStr;
+
+      // Filter by school
       const schoolMatches = selectedSchool === 'All Schools' || order.school === selectedSchool;
-      return schoolMatches;
+
+      return dateMatches && schoolMatches;
     });
 
     ordersToProcess.forEach(order => {

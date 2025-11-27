@@ -4,7 +4,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { stripePromise } from '../utils/stripe';
 import { useCart } from '../hooks/useCart';
 import CheckoutForm from './CheckoutForm';
-import './CheckoutPage.css';
+import './CheckOutPage.css';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();

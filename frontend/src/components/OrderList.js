@@ -459,40 +459,100 @@ function OrderList() {
           </p>
         </div>
 
-      {/* Production List - Only visible when printing */}
-      <div className="production-list-print">
-        <h2 className="production-view-header">ALL ORDERS</h2>
-        <div className="production-date-header">
-          Delivery Date: {formatDateDDMMYYYY(selectedDate)}
-        </div>
-        {Object.keys(productionList).sort().map(category => (
-          <div key={category} className="production-category">
-            <h3 className="production-category-title">{category}</h3>
-            <table className="production-table">
-              <thead>
-                <tr>
-                  <th>Quantity</th>
-                  <th>Item</th>
-                  <th>Rice Type</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(productionList[category])
-                  .sort((a, b) => b.quantity - a.quantity)
-                  .map((item, index) => (
-                    <tr key={index}>
-                      <td className="quantity-cell">{item.quantity}</td>
-                      <td className="item-name-cell">{item.name}</td>
-                      <td className="rice-cell">{item.riceType || '-'}</td>
-                      <td className="notes-cell">{item.notes || '-'}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+      {/* Production List - Only visible when printing and in production view */}
+      {viewMode === 'production' && (
+        <div className="production-list-print">
+          <h2 className="production-view-header">ALL ORDERS</h2>
+          {selectedSchool !== 'All Schools' && (
+            <div className="production-school-header">{selectedSchool}</div>
+          )}
+          <div className="production-date-header">
+            Delivery Date: {formatDateDDMMYYYY(selectedDate)}
           </div>
-        ))}
-      </div>
+          {Object.keys(productionList).sort().map(category => (
+            <div key={category} className="production-category">
+              <h3 className="production-category-title">{category}</h3>
+              <table className="production-table">
+                <thead>
+                  <tr>
+                    <th>Quantity</th>
+                    <th>Item</th>
+                    <th>Rice Type</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(productionList[category])
+                    .sort((a, b) => b.quantity - a.quantity)
+                    .map((item, index) => (
+                      <tr key={index}>
+                        <td className="quantity-cell">{item.quantity}</td>
+                        <td className="item-name-cell">{item.name}</td>
+                        <td className="rice-cell">{item.riceType || '-'}</td>
+                        <td className="notes-cell">{item.notes || '-'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Labels List - Only visible when printing and in labels view */}
+      {viewMode === 'labels' && (
+        <div className="labels-list-print">
+          {(() => {
+            // Group orders by school
+            const ordersBySchool = {};
+            filteredOrders.forEach(order => {
+              const school = order.school || 'Unknown School';
+              if (!ordersBySchool[school]) {
+                ordersBySchool[school] = [];
+              }
+              ordersBySchool[school].push(order);
+            });
+
+            return Object.keys(ordersBySchool).sort().map(school => (
+              <div key={school} className="labels-school-section-print">
+                <div className="labels-grid-print">
+                  {ordersBySchool[school].map(order => (
+                    <div key={order.id} className="student-label-card-print">
+                      <div className="label-field">
+                        <span className="label-value">Room: {order.room || 'N/A'} - {order.studentName || 'N/A'}</span>
+                      </div>
+                      <div className="label-field">
+                        <span className="label-title">School:</span>
+                        <span className="label-value">{order.school || 'N/A'}</span>
+                      </div>
+                      <div className="label-field">
+                        <span className="label-title">Delivery Date:</span>
+                        <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
+                      </div>
+                      <div className="label-field label-items-section">
+                        <span className="label-title">Items:</span>
+                        <div className="label-items-list">
+                          {order.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="label-item">
+                              <div className="label-item-name">{item.quantity}x {item.name}</div>
+                              {item.riceType && (
+                                <div className="label-item-detail">Rice: {item.riceType}</div>
+                              )}
+                              {item.specialNotes && (
+                                <div className="label-item-detail">Notes: {item.specialNotes}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      )}
 
       <button onClick={handlePrint} className="print-btn" title="Print Orders">
         🖨️
@@ -564,46 +624,35 @@ function OrderList() {
                   <h3 className="labels-school-header">{school}</h3>
                   <div className="labels-grid">
                     {ordersBySchool[school].map(order => (
-                      order.items.map((item, itemIndex) => (
-                        <div key={`${order.id}-${itemIndex}`} className="student-label-card">
-                          <div className="label-field">
-                            <span className="label-title">Room:</span>
-                            <span className="label-value">{order.room || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Name:</span>
-                            <span className="label-value">{order.studentName || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">School:</span>
-                            <span className="label-value">{order.school || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Delivery Date:</span>
-                            <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Item:</span>
-                            <span className="label-value">{item.name}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Quantity:</span>
-                            <span className="label-value">{item.quantity}</span>
-                          </div>
-                          {item.riceType && (
-                            <div className="label-field">
-                              <span className="label-title">Rice Type:</span>
-                              <span className="label-value">{item.riceType}</span>
-                            </div>
-                          )}
-                          {item.specialNotes && (
-                            <div className="label-field">
-                              <span className="label-title">Notes:</span>
-                              <span className="label-value">{item.specialNotes}</span>
-                            </div>
-                          )}
+                      <div key={order.id} className="student-label-card">
+                        <div className="label-field">
+                          <span className="label-value">Room: {order.room || 'N/A'} - {order.studentName || 'N/A'}</span>
                         </div>
-                      ))
+                        <div className="label-field">
+                          <span className="label-title">School:</span>
+                          <span className="label-value">{order.school || 'N/A'}</span>
+                        </div>
+                        <div className="label-field">
+                          <span className="label-title">Delivery Date:</span>
+                          <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
+                        </div>
+                        <div className="label-field label-items-section">
+                          <span className="label-title">Items:</span>
+                          <div className="label-items-list">
+                            {order.items.map((item, itemIndex) => (
+                              <div key={itemIndex} className="label-item">
+                                <div className="label-item-name">{item.quantity}x {item.name}</div>
+                                {item.riceType && (
+                                  <div className="label-item-detail">Rice: {item.riceType}</div>
+                                )}
+                                {item.specialNotes && (
+                                  <div className="label-item-detail">Notes: {item.specialNotes}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>

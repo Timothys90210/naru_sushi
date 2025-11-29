@@ -408,7 +408,8 @@
     margin: 0;
 }
 
-.production-list-print {
+.production-list-print,
+.labels-list-print {
     display: none;
 }
 
@@ -1071,48 +1072,60 @@
 
 /* Student Labels View Styles */
 .labels-list-view {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 .labels-school-section {
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .labels-school-header {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     color: white;
     background: #34495e;
-    padding: 0.75rem 1rem;
-    margin: 0 0 1.5rem 0;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0 1rem 0;
     border-left: 4px solid #3498db;
     font-weight: 600;
 }
 
 .labels-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
     padding: 0;
+}
+
+@media (min-width: 768px) {
+    .labels-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .labels-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .student-label-card {
     background: white;
     border: 2px solid #ddd;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border-radius: 6px;
+    padding: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     transition: box-shadow 0.3s, transform 0.3s;
 }
 
 .student-label-card:hover {
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
 }
 
 .label-field {
     display: flex;
     justify-content: space-between;
-    padding: 0.5rem 0;
+    padding: 0.35rem 0;
     border-bottom: 1px solid #ecf0f1;
 }
 
@@ -1123,15 +1136,51 @@
 .label-title {
     font-weight: 600;
     color: #2c3e50;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .label-value {
     color: #555;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     text-align: right;
     max-width: 60%;
     word-wrap: break-word;
+}
+
+.label-items-section {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.label-items-section .label-title {
+    margin-bottom: 0.35rem;
+}
+
+.label-items-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.label-item {
+    background: #f8f9fa;
+    padding: 0.4rem;
+    border-radius: 3px;
+    border-left: 2px solid #3498db;
+}
+
+.label-item-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.85rem;
+    margin-bottom: 0.2rem;
+}
+
+.label-item-detail {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 0.1rem;
 }
 
 .cards-view-table .room-cell {
@@ -1192,7 +1241,7 @@
     }
 
     .order-list-container {
-        padding: 0.5rem;
+        padding: 0;
         background: white;
         min-height: auto;
     }
@@ -1216,39 +1265,23 @@
         display: none;
     }
 
-    /* Keep whatever view is currently visible */
-    .orders-grid {
-        display: none !important;
-    }
-
-    /* Cards list view stays visible if it's showing */
-    .cards-list-view {
-        display: block !important;
-    }
-
-    /* Production list view stays visible if it's showing */
-    .production-list-view {
-        display: block !important;
-    }
-
-    /* Labels list view stays visible if it's showing */
+    /* Hide all screen views */
+    .orders-grid,
+    .cards-list-view,
+    .production-list-view,
     .labels-list-view {
-        display: block !important;
-    }
-
-    /* Hide the production-list-print (duplicate) */
-    .production-list-print {
         display: none !important;
     }
 
-    /* Hide screen view, show print view */
-    .production-list-view {
-        display: none !important;
-    }
-
+    /* Show print views (conditional rendering handles which one) */
     .production-list-print {
         display: block !important;
         padding: 0.25rem;
+    }
+
+    .labels-list-print {
+        display: block !important;
+        padding: 10mm; /* 10mm padding for sticker sheet alignment */
     }
 
     .production-title {
@@ -1349,6 +1382,15 @@
         margin-top: 0;
         border: none;
         letter-spacing: 2px;
+    }
+
+    .production-school-header {
+        font-size: 1.25rem;
+        font-weight: 600;
+        text-align: center;
+        color: #000;
+        margin-bottom: 0.25rem;
+        margin-top: 0;
     }
 
     .production-date-header {
@@ -1555,5 +1597,121 @@
         border-left: 4px solid #3498db;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    /* Labels print view styles - Fixed dimensions for sticker sheets */
+    .labels-school-section-print {
+        margin: 0;
+        padding: 0;
+    }
+
+    .labels-school-section-print:not(:last-child) {
+        page-break-after: auto; /* Allow natural flow between schools */
+    }
+
+    .labels-school-header-print {
+        display: none; /* Hide school headers in print to maximize label space */
+    }
+
+    .labels-grid-print {
+        display: grid;
+        grid-template-columns: repeat(2, 70mm); /* 2 columns */
+        grid-auto-rows: 37mm;    /* Auto rows instead of fixed 8 rows */
+        column-gap: 4mm;  /* space between columns */
+        row-gap: 4mm;     /* space between rows */
+        margin-bottom: 0;
+    }
+
+    .student-label-card-print {
+        width: 70mm;
+        height: 37mm;
+        box-sizing: border-box;
+        background: white;
+        border: 1px solid #000;
+        border-radius: 0;
+        padding: 1.5mm;
+        page-break-inside: avoid;
+        box-shadow: none;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student-label-card-print .label-field {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3mm 0;
+        border-bottom: none;
+        font-size: 7pt;
+        line-height: 1.1;
+    }
+
+    .student-label-card-print .label-field:first-child {
+        font-weight: 700;
+        font-size: 8pt;
+        margin-bottom: 0.5mm;
+    }
+
+    .student-label-card-print .label-field:last-child {
+        border-bottom: none;
+        flex: 1;
+    }
+
+    .student-label-card-print .label-title {
+        font-weight: 600;
+        color: #000;
+        font-size: 6pt;
+    }
+
+    .student-label-card-print .label-value {
+        color: #000;
+        font-size: 7pt;
+        font-weight: 600;
+        text-align: right;
+        word-wrap: break-word;
+    }
+
+    .student-label-card-print .label-items-section {
+        flex-direction: column;
+        align-items: flex-start;
+        flex: 1;
+        overflow: hidden;
+    }
+
+    .student-label-card-print .label-items-section .label-title {
+        margin-bottom: 0.5mm;
+        font-size: 6pt;
+    }
+
+    .student-label-card-print .label-items-list {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3mm;
+        margin-top: 0;
+    }
+
+    .student-label-card-print .label-item {
+        background: #f5f5f5;
+        padding: 0.5mm 0.5mm 0.5mm 1mm;
+        border-radius: 0;
+        border-left: 1mm solid #000;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .student-label-card-print .label-item-name {
+        font-weight: 600;
+        color: #000;
+        font-size: 7pt;
+        margin-bottom: 0.2mm;
+        line-height: 1;
+    }
+
+    .student-label-card-print .label-item-detail {
+        font-size: 5pt;
+        color: #333;
+        margin-top: 0;
+        line-height: 1;
     }
 }

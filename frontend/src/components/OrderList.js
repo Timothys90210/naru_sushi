@@ -16,7 +16,8 @@ function OrderList() {
   const [currentCalendarMonth, setCurrentCalendarMonth] = useState(new Date());
   const [schools, setSchools] = useState([]);
   const [selectedSchool, setSelectedSchool] = useState('All Schools');
-  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'production'
+  const [viewMode, setViewMode] = useState('production'); // 'production', 'labels', or 'cards'
+  const [lastFetchTime, setLastFetchTime] = useState(null);
 
   const formatDate = (dateValue, includeTime = false) => {
     if (!dateValue) return 'N/A';
@@ -79,6 +80,11 @@ function OrderList() {
     try {
       setLoading(true);
 
+      // Get last fetch time for selected date from localStorage
+      const dateKey = formatDateDDMMYYYY(selectedDate);
+      const storedTime = localStorage.getItem(`lastFetchTime_${dateKey}`);
+      const previousFetchTime = storedTime ? new Date(storedTime) : null;
+
       // Fetch orders, menu items, and schools
       const [ordersRes, menuRes, schoolsRes] = await Promise.all([
         fetch(`${API_URL}/api/orders`),
@@ -97,11 +103,23 @@ function OrderList() {
       setOrders(ordersData.data);
       setMenuItems(menuData.data);
       setSchools(schoolsData.data);
+
+      // Store current fetch time
+      const currentTime = new Date();
+      setLastFetchTime(previousFetchTime);
+      localStorage.setItem(`lastFetchTime_${dateKey}`, currentTime.toISOString());
+
       setLoading(false);
     } catch (err) {
       setError(err.message);
       setLoading(false);
     }
+  };
+
+  const isNewOrder = (order) => {
+    if (!lastFetchTime) return false;
+    const orderCreatedTime = new Date(order.createdAt || order.date);
+    return orderCreatedTime > lastFetchTime;
   };
 
   useEffect(() => {
@@ -151,7 +169,16 @@ function OrderList() {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Check if there are any orders to print
+    if (Object.keys(productionList).length === 0) {
+      alert('No orders to print for the selected date and school.');
+      return;
+    }
+
+    // Use setTimeout to avoid browser locker behavior issues
+    setTimeout(() => {
+      window.print();
+    }, 0);
   };
 
   // Get unique dates that have orders (filtered by selected school)
@@ -270,8 +297,21 @@ function OrderList() {
             name: item.name,
             quantity: 0,
             riceType,
-            notes
+            notes,
+            orderDateTime: order.createdAt || order.date,
+            isNew: isNewOrder(order)
           };
+        } else {
+          // Keep the earliest order date/time
+          const existingDateTime = new Date(productionMap[category][itemKey].orderDateTime);
+          const currentDateTime = new Date(order.createdAt || order.date);
+          if (currentDateTime < existingDateTime) {
+            productionMap[category][itemKey].orderDateTime = order.createdAt || order.date;
+          }
+          // Mark as new if any order contributing to this item is new
+          if (isNewOrder(order)) {
+            productionMap[category][itemKey].isNew = true;
+          }
         }
 
         productionMap[category][itemKey].quantity += item.quantity;
@@ -294,22 +334,15 @@ function OrderList() {
   return (
     <div className="order-list-container">
       <div className="orders-header">
-        <div className="header-left">
-          <h1>Order Management</h1>
-          <p className="orders-count">Total Orders: {orders.length}</p>
-        </div>
+        <h1>Order Management</h1>
+      </div>
+      <div className="view-toggle-wrapper">
         <div className="view-toggle">
           <button
             className={`toggle-btn ${viewMode === 'production' ? 'active' : ''}`}
             onClick={() => setViewMode('production')}
           >
-            All Orders
-          </button>
-          <button
-            className={`toggle-btn ${viewMode === 'cards' ? 'active' : ''}`}
-            onClick={() => setViewMode('cards')}
-          >
-            Schools
+            Orders
           </button>
           <button
             className={`toggle-btn ${viewMode === 'labels' ? 'active' : ''}`}
@@ -332,7 +365,7 @@ function OrderList() {
                 type="text"
                 id="date-display"
                 className="date-filter-input"
-                value={formatDateDDMMYYYY(selectedDate)}
+                value={`${formatDateDDMMYYYY(selectedDate)}${isToday(selectedDate) ? ' (TODAY)' : ''}`}
                 readOnly
                 onClick={toggleCalendar}
               />
@@ -384,7 +417,7 @@ function OrderList() {
                             <div
                               key={dayIndex}
                               className={`calendar-day ${!dayInfo ? 'empty' : ''} ${dayInfo?.isToday ? 'today' : ''} ${dayInfo?.isSelected ? 'selected' : ''} ${dayInfo?.hasOrders ? 'has-orders' : ''}`}
-                              onClick={() => dayInfo && handleDateSelect(dayInfo.date)}
+                              onClick={() => dayInfo && dayInfo.hasOrders && handleDateSelect(dayInfo.date)}
                             >
                               {dayInfo && (
                                 <span className="day-number">{dayInfo.day}</span>
@@ -426,36 +459,100 @@ function OrderList() {
           </p>
         </div>
 
-      {/* Production List - Only visible when printing */}
-      <div className="production-list-print">
-        {Object.keys(productionList).sort().map(category => (
-          <div key={category} className="production-category">
-            <h3 className="production-category-title">{category}</h3>
-            <table className="production-table">
-              <thead>
-                <tr>
-                  <th>Quantity</th>
-                  <th>Item</th>
-                  <th>Rice Type</th>
-                  <th>Notes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.values(productionList[category])
-                  .sort((a, b) => b.quantity - a.quantity)
-                  .map((item, index) => (
-                    <tr key={index}>
-                      <td className="quantity-cell">{item.quantity}</td>
-                      <td className="item-name-cell">{item.name}</td>
-                      <td className="rice-cell">{item.riceType || '-'}</td>
-                      <td className="notes-cell">{item.notes || '-'}</td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+      {/* Production List - Only visible when printing and in production view */}
+      {viewMode === 'production' && (
+        <div className="production-list-print">
+          <h2 className="production-view-header">ALL ORDERS</h2>
+          {selectedSchool !== 'All Schools' && (
+            <div className="production-school-header">{selectedSchool}</div>
+          )}
+          <div className="production-date-header">
+            Delivery Date: {formatDateDDMMYYYY(selectedDate)}
           </div>
-        ))}
-      </div>
+          {Object.keys(productionList).sort().map(category => (
+            <div key={category} className="production-category">
+              <h3 className="production-category-title">{category}</h3>
+              <table className="production-table">
+                <thead>
+                  <tr>
+                    <th>Quantity</th>
+                    <th>Item</th>
+                    <th>Rice Type</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.values(productionList[category])
+                    .sort((a, b) => b.quantity - a.quantity)
+                    .map((item, index) => (
+                      <tr key={index}>
+                        <td className="quantity-cell">{item.quantity}</td>
+                        <td className="item-name-cell">{item.name}</td>
+                        <td className="rice-cell">{item.riceType || '-'}</td>
+                        <td className="notes-cell">{item.notes || '-'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Labels List - Only visible when printing and in labels view */}
+      {viewMode === 'labels' && (
+        <div className="labels-list-print">
+          {(() => {
+            // Group orders by school
+            const ordersBySchool = {};
+            filteredOrders.forEach(order => {
+              const school = order.school || 'Unknown School';
+              if (!ordersBySchool[school]) {
+                ordersBySchool[school] = [];
+              }
+              ordersBySchool[school].push(order);
+            });
+
+            return Object.keys(ordersBySchool).sort().map(school => (
+              <div key={school} className="labels-school-section-print">
+                <div className="labels-grid-print">
+                  {ordersBySchool[school].map(order => (
+                    <div key={order.id} className="student-label-card-print">
+                      <div className="label-field">
+                        <span className="label-value">Room: {order.room || 'N/A'} - {order.studentName || 'N/A'}</span>
+                      </div>
+                      <div className="label-field">
+                        <span className="label-title">School:</span>
+                        <span className="label-value">{order.school || 'N/A'}</span>
+                      </div>
+                      <div className="label-field">
+                        <span className="label-title">Delivery Date:</span>
+                        <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
+                      </div>
+                      <div className="label-field label-items-section">
+                        <span className="label-title">Items:</span>
+                        <div className="label-items-list">
+                          {order.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="label-item">
+                              <div className="label-item-name">{item.quantity}x {item.name}</div>
+                              {item.riceType && (
+                                <div className="label-item-detail">Rice: {item.riceType}</div>
+                              )}
+                              {item.specialNotes && (
+                                <div className="label-item-detail">Notes: {item.specialNotes}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ));
+          })()}
+        </div>
+      )}
 
       <button onClick={handlePrint} className="print-btn" title="Print Orders">
         🖨️
@@ -465,6 +562,9 @@ function OrderList() {
         <div className="production-list-view">
           {Object.keys(productionList).length > 0 ? (
             <>
+              <h2 className="production-view-header">
+                {selectedSchool === 'All Schools' ? 'All orders' : selectedSchool}
+              </h2>
               <div className="production-date-header">
                 Delivery Date: {formatDateDDMMYYYY(selectedDate)}
               </div>
@@ -474,6 +574,7 @@ function OrderList() {
                   <table className="production-view-table">
                     <thead>
                       <tr>
+                        <th>Order Date & Time</th>
                         <th>Quantity</th>
                         <th>Item</th>
                         <th>Rice Type</th>
@@ -482,9 +583,13 @@ function OrderList() {
                     </thead>
                     <tbody>
                       {Object.values(productionList[category])
-                        .sort((a, b) => b.quantity - a.quantity)
+                        .sort((a, b) => new Date(b.orderDateTime) - new Date(a.orderDateTime))
                         .map((item, index) => (
-                          <tr key={index}>
+                          <tr key={index} className={item.isNew ? 'new-order-row' : ''}>
+                            <td className="date-time-cell">
+                              {formatDate(item.orderDateTime, true)}
+                              {item.isNew && <span className="new-badge">NEW</span>}
+                            </td>
                             <td className="quantity-cell">{item.quantity}</td>
                             <td className="item-name-cell">{item.name}</td>
                             <td className="rice-cell">{item.riceType || '-'}</td>
@@ -519,46 +624,35 @@ function OrderList() {
                   <h3 className="labels-school-header">{school}</h3>
                   <div className="labels-grid">
                     {ordersBySchool[school].map(order => (
-                      order.items.map((item, itemIndex) => (
-                        <div key={`${order.id}-${itemIndex}`} className="student-label-card">
-                          <div className="label-field">
-                            <span className="label-title">Room:</span>
-                            <span className="label-value">{order.room || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Name:</span>
-                            <span className="label-value">{order.studentName || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">School:</span>
-                            <span className="label-value">{order.school || 'N/A'}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Delivery Date:</span>
-                            <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Item:</span>
-                            <span className="label-value">{item.name}</span>
-                          </div>
-                          <div className="label-field">
-                            <span className="label-title">Quantity:</span>
-                            <span className="label-value">{item.quantity}</span>
-                          </div>
-                          {item.riceType && (
-                            <div className="label-field">
-                              <span className="label-title">Rice Type:</span>
-                              <span className="label-value">{item.riceType}</span>
-                            </div>
-                          )}
-                          {item.specialNotes && (
-                            <div className="label-field">
-                              <span className="label-title">Notes:</span>
-                              <span className="label-value">{item.specialNotes}</span>
-                            </div>
-                          )}
+                      <div key={order.id} className="student-label-card">
+                        <div className="label-field">
+                          <span className="label-value">Room: {order.room || 'N/A'} - {order.studentName || 'N/A'}</span>
                         </div>
-                      ))
+                        <div className="label-field">
+                          <span className="label-title">School:</span>
+                          <span className="label-value">{order.school || 'N/A'}</span>
+                        </div>
+                        <div className="label-field">
+                          <span className="label-title">Delivery Date:</span>
+                          <span className="label-value">{formatDateDDMMYYYY(order.deliveryDate || order.date)}</span>
+                        </div>
+                        <div className="label-field label-items-section">
+                          <span className="label-title">Items:</span>
+                          <div className="label-items-list">
+                            {order.items.map((item, itemIndex) => (
+                              <div key={itemIndex} className="label-item">
+                                <div className="label-item-name">{item.quantity}x {item.name}</div>
+                                {item.riceType && (
+                                  <div className="label-item-detail">Rice: {item.riceType}</div>
+                                )}
+                                {item.specialNotes && (
+                                  <div className="label-item-detail">Notes: {item.specialNotes}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
